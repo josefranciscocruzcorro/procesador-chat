@@ -1,205 +1,137 @@
 class ProcesadorChat
 {
+    /**
+     * Flujo de la conversacion, 
+     * si pc:true  entonces "respuesta de maquina"
+     * si pc:false entonces "respuesta de usuario"
+     */
     flujo           = [];
-    arbol           = [];
+    /**
+     * arbol de descicion, motor de la conversacion
+     * 
+     * [
+     *   {
+     *     item: "categoria 1",
+     *     subitems: []      => OTRO ARBOL con la misma estructura, o un arreglo vacio si no hay mas profundidad
+     *     preguntas: [
+     *       {
+     *         pregunta: "primera pregunta?",
+     *         opciones: [
+     *           {
+     *             opcion: "opcion elejible en la pregunta",
+     *             fin: false  => SI ES TRUE ENTONCES TODAS LAS PREGUNTAS TERMINAN AL ELEJIR ESTA OPCION, SI ES FALSE, LAS PREGUNTAS SIGUIENTES CONTINUAN SIN IMPORTAR SI SE ELIJE ESTA OPCION O NO
+     *           },
+     *         
+     *       },
+     *     ],
+     *     respuestas: [
+     *       {
+     *         respuesta: "llene este formulario",  => LAS RESPUESTAS SON SOLO MENSAJES QUE SIGUEN UNA CONVERSACION LINEAL SIN IMPORTAR LA RESPUESTA DEL USUARIO, SE EJECUTARAN UNA TRAS OTRA ENTRE MENSAJES DE USUARIO
+     *       },
+     *     ]
+     *   },
+     * ]
+     */
+    arbol           = []; 
     preguntas       = [];
     respuestas      = [];
-    respuestaAuto   = false;
-    funcionRes  = ()=>{};
+    opciones        = [];
 
-    constructor (arbol,flujo,funcionRes  = (x)=>{return x;})
+    constructor (arbol,flujo)
     {
         this.arbol      = arbol;
         this.flujo      = flujo;
-        this.funcionRes = funcionRes;
     }
 
-    chat(msg,auto = false){
-        if (auto) {
-            do {
-                this.flujo = this.procesarPorMSG(msg)
-            } while (this.arbol.length > 0 );
+    /**
+     * 
+     * @param {int} msg Es un numero entero que representa el indice del arreglo elejido en el momento del flujo, elije primero en opciones si ubieran, y luego de la lista de items del arbol si existieran, 
+     * @returns array retorna el flujo de la conversacion
+     */
+    chatItem(msg){
+        if (this.opciones.length > 0) {
+            let opcion = Object.assign({},this.opciones[msg]);
+            this.opciones = [];
+
+            this.flujo.push({
+                pc : false,
+                msg: opcion.opcion
+            });
+
+            if (opcion.fin) {
+                this.preguntas = [];
+            }
             
+            this.procesoPreguntasRespuestas();
+
+            return this.flujo;
+        }
+
+        if (this.arbol.length > 0) {
+            let opcion = Object.assign({},this.arbol[msg]);
+            this.arbol = Object.assign({},(opcion.subitems? opcion.subitems:[]));
+
+            this.flujo.push({
+                pc : false,
+                msg: opcion.item
+            });
+
+            if (opcion.preguntas.length > 0) {
+                this.preguntas  = Object.assign({},opcion.preguntas);
+            }
+            if (opcion.respuestas.length > 0) {
+                this.respuestas = Object.assign({},opcion.respuestas);
+            }
+
             if (this.arbol.length <= 0) {
-                let plong   = this.preguntas.length;
-                let rlong   = this.respuestas.length;
-                if (plong > 0) {
-                    this.flujo  = this.setPregunta(msg);
-                }else if (rlong > 0) {
-                    this.flujo = this.setRespuesta(msg);
-                }else if (this.respuestaAuto) {
-                    this.flujo = this.setResX(msg);
-                    this.respuestaAuto = false;
-                }
+                this.procesoPreguntasRespuestas();
             }
-        }else{
-            this.flujo = this.procesarPorItem(msg);
+
+            return this.flujo;
         }
 
-        if (this.flujo[this.flujo.length-1].user &&
-            this.arbol.length <= 0 &&
-            this.preguntas.length <= 0 &&
-            this.preguntas.length <= 0 &&
-            !this.respuestaAuto) {
-            
-                this.flujo.push({
-                    user:   false,
-                    msg:    '---',
-                    fin:    true
-                });
-        }
+    }
 
+    /**
+     * 
+     * @param {str} msg Cadena de caracteres enviada por el usuario
+     * @returns array devuelve el flujo de la conversacion
+     */
+    chat(msg){
+        this.flujo.push({
+            pc : false,
+            msg: msg
+        });
+
+        this.procesoPreguntasRespuestas();
 
         return this.flujo;
     }
 
-    procesarPorMSG(msg){
-        let res = this.funcionRes(msg,this.arbol);
-
-        this.flujo.push({
-            user:   true,
-            msg:    opcion.item,
-        });
-
-        for (let i = 0; i < this.arbol.length; i++) {
-            if (this.arbol[i].item.toLowerCase().trim().indexOf(res.toLowerCase().trim()) > -1) {
-                
-                return this.procesarPorItem(i);
-            }
-        }
-
-        return;
-    }
-
-    procesarPorItem(index) {
-        let opcion  = this.arbol[index];
-        let aux     = Object.assign(this.arbol[index]);
-        this.arbol  = aux.subitems? aux.subitems : [];
-        
-        if (opcion.preguntas.length > 0) {
-            this.preguntas = opcion.preguntas;
-        }
-        
-        if (opcion.respuestas.length > 0) {
-            this.respuestas = opcion.respuestas;
-        }
-        
-        if (opcion.respuestaAuto) {
-            this.respuestas = opcion.respuestaAuto;
-        }
-
-        this.flujo.push({
-            user:   true,
-            msg:    opcion.item,
-        });
-
-        if (this.arbol.length <= 0) {
-            let plong   = this.preguntas.length;
-            let rlong   = this.respuestas.length;
-            if (plong > 0) {
-                this.flujo  = this.setPregunta();
-            }else if (rlong > 0) {
-                this.flujo = this.setRespuesta();
-            }else if (this.respuestaAuto) {
-                this.flujo = this.setResX();
-                this.respuestaAuto = false;
-            }
-        }
-        
-        
-        return flujo;
-    }
-
-    setPregunta(msg = ''){
-        if (msg != '') {
-             
-
-            if (this.flujo[this.flujo.length - 1].opc &&
-                this.flujo[this.flujo.length - 1].opc.toLowerCase().trim().indexOf(msg.toLowerCase().trim()) <= -1 ) {
-                    
-                    this.preguntas = [];
-            }
+    /**
+     * Procesa las preguntas y respuestas, para siempre agregar al flujo la primera
+     * pregunta si hubieran aun preguntas, o la primera respuesta si hubieran aun 
+     * respuestas. Una vez enviada la pregunta o respuesta al flujo se procede
+     * a eliminarla de la lista de preguntas o respuestas segun corresponda.
+     * son prioridad las preguntas.
+     */
+    procesoPreguntasRespuestas(){
+        if(this.preguntas.length > 0){
             this.flujo.push({
-                user:   true,
-                msg:    msg,
+                pc : true,
+                msg: this.preguntas[0].pregunta
             });
-        }
-        if (this.preguntas.length > 0) {
-            if (this.preguntas[0].indexOf('::')) {
-                let p = this.preguntas[0].split('::');
-                this.flujo.push({
-                    user:   false,
-                    msg:    p[0],
-                    opc:    p[1]
-                });  
-            }else{
-                this.flujo.push({
-                    user:   false,
-                    msg:    this.preguntas[0]
-                });
-            }
+
+            this.opciones = Object.assign({},this.preguntas[0].opciones);
             this.preguntas.splice(0,1);
-        }
-
-        return this.flujo;
-    }
-
-    setRespuesta(msg = ''){
-        if (msg != '') {
+        }else if(this.respuestas.length > 0){
             this.flujo.push({
-                user:   true,
-                msg:    msg,
+                pc : true,
+                msg: this.respuestas[0].respuesta
             });
-            if (this.respuestas[0].condicion &&
-                this.respuestas[0].condicion.toLowerCase().trim().indexOf(msg.toLowerCase().trim()) <= -1) {
-                
-                    this.respuestas = [];
-            }
-        }
 
-        if (this.respuestas.length > 0) {
-            if (this.respuestas[0].condicion &&
-                this.respuestas[0].condicion.toLowerCase().trim().indexOf(msg.toLowerCase().trim()) > -1) {
-                
-                    this.flujo.push({
-                        user:   false,
-                        msg:    this.respuestas[0].respuesta,
-                    });
-
-                    this.respuestas = [];
-
-                    return this.flujo;
-            }
-
-            this.flujo.push({
-                user:   false,
-                msg:    this.respuestas[0].respuesta,
-            });
             this.respuestas.splice(0,1);
         }
-        
-        return this.flujo;
-    }
-
-    setResX(msg = ''){
-
-        if (msg != '') {
-            this.flujo.push({
-                user:   true,
-                msg:    msg,
-            });            
-        }
-        
-        if (this.respuestaAuto) {
-            let res = this.funcionRes(msg);
-    
-            this.flujo.push({
-                user:   false,
-                msg:    res,
-            });            
-        }
-
-        return this.flujo;
     }
 
 }
