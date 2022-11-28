@@ -56,6 +56,7 @@ La estructura json "ARBOL DE DESCICION" se detalla acontinuacion: (es un ejemplo
                 "opciones": [
                     {
                         "opcion": "si", 
+                        "respuesta": "Haz elejido si, adjunta un archivo...",
                     },
                     {
                         "opcion": "no", 

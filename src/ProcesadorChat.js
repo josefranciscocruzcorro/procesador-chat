@@ -58,6 +58,13 @@ class ProcesadorChat
                 msg: opcion.opcion
             });
 
+            if (opcion.respuesta) {
+                this.flujo.push({
+                    pc : true,
+                    msg: opcion.respuesta
+                });
+            }
+
             if (opcion.fin) {
                 this.preguntas = [];
             }
