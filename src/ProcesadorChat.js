@@ -76,18 +76,18 @@ class ProcesadorChat
 
         if (this.arbol.length > 0) {
             let opcion = Object.assign({},this.arbol[msg]);
-            this.arbol = Object.assign({},(opcion.subitems? opcion.subitems:[]));
+            this.arbol = Object.assign([],(opcion.subitems? opcion.subitems:[]));
 
             this.flujo.push({
                 pc : false,
                 msg: opcion.item
             });
 
-            if (opcion.preguntas.length > 0) {
-                this.preguntas  = Object.assign({},opcion.preguntas);
+            if (opcion.preguntas && opcion.preguntas.length > 0) {
+                this.preguntas  = Object.assign([],opcion.preguntas);
             }
-            if (opcion.respuestas.length > 0) {
-                this.respuestas = Object.assign({},opcion.respuestas);
+            if (opcion.respuestas && opcion.respuestas.length > 0) {
+                this.respuestas = Object.assign([],opcion.respuestas);
             }
 
             if (this.arbol.length <= 0) {
@@ -129,7 +129,7 @@ class ProcesadorChat
                 msg: this.preguntas[0].pregunta
             });
 
-            this.opciones = Object.assign({},this.preguntas[0].opciones);
+            this.opciones = Object.assign([],this.preguntas[0].opciones);
             this.preguntas.splice(0,1);
         }else if(this.respuestas.length > 0){
             this.flujo.push({

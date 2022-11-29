@@ -1,6 +1,6 @@
 {
   "name": "procesador-chat",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "",
   "main": "src/ProcesadorChat.js",
   "scripts": {
